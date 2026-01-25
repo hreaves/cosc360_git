@@ -1,2 +1,0 @@
-ERROR: Incorrect healing amount on line 3
-Read 718 but should be 717
