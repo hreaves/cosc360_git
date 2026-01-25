@@ -15,22 +15,28 @@ typedef struct node {
 	struct node *prev;
 	int adj_size;
 	struct node **adj;
+	int visited;
 } Node;
 
-//void DFS(Node *n, int hop_num,// ) {
+typedef struct global {
+	int initial_range, jump_range, num_jumps, initial_power;
+    double power_reduction;
+} Global;
 
-//}
+void DFS(Node *n, int hop_num, Global *g) {
+
+}
 
 
 int main(int argc, char **argv) {
-	int initial_range, jump_range, num_jumps, initial_power;
-	double power_reduction;
-
-	initial_range = atoi(argv[1]);
-	jump_range = atoi(argv[2]);
-	num_jumps = atoi(argv[3]);
-	initial_power = atoi(argv[4]);
-	power_reduction = atof(argv[5]);
+	
+	Global *g;
+	g = (Global *) malloc(sizeof(Global));
+	g->initial_range = atoi(argv[1]);
+	g->jump_range = atoi(argv[2]);
+	g->num_jumps = atoi(argv[3]);
+	g->initial_power = atoi(argv[4]);
+	g->power_reduction = atof(argv[5]);
 
 	char name[100];
 	int x, y, cur_PP, max_PP, num_nodes = 0;
@@ -66,7 +72,7 @@ int main(int argc, char **argv) {
 			}
 			x_dist = nodes[i]->x - nodes[j]->x;
 			y_dist = nodes[i]->y - nodes[j]->y;
-			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
+			if((x_dist*x_dist + y_dist*y_dist) <= (g->jump_range*g->jump_range)) {
 				nodes[i]->adj_size++;
 			}
 		}
@@ -82,11 +88,24 @@ int main(int argc, char **argv) {
 			}
             x_dist = nodes[i]->x - nodes[j]->x;
             y_dist = nodes[i]->y - nodes[j]->y;
-			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
+			if((x_dist*x_dist + y_dist*y_dist) <= (g->jump_range*g->jump_range)) {
                 nodes[i]->adj[k] = nodes[j];
 				k++;
 			}
 		}
 	}
+	// find nodes within initial range of Urgosa and run DFS on thme
+	for(int i = 0; i < num_nodes; i++) {
+		if(nodes[i]->name == "Urgosa_the_Healing_Shaman") {
+			for(int j = 0; j < num_nodes; j++) {
+				x_dist = nodes[i]->x - nodes[j]->x;
+				y_dist = nodes[i]->y - nodes[j]->y;
+				if((x_dist*x_dist + y_dist*y_dist) <= (g->initial_range*g->initial_range)) {
+					DFS(nodes[j], 1, g); // starting node, hop_num, pointer to global variables
+				}
+			}
+		}		
+	}
+ 
 
 return 0; }
