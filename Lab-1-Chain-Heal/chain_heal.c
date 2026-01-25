@@ -37,11 +37,11 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 	cur_n->visited = 1;
 	cur_n->prev = from;
 
-	if(cur_power + cur_n->cur_PP > cur_n->max_PP) {
+	if(rint(cur_power) + cur_n->cur_PP > cur_n->max_PP) {
         cur_n->heal = cur_n->max_PP - cur_n->cur_PP;
 	}
     else {
-	    cur_n->heal = cur_power;
+	    cur_n->heal = rint(cur_power);
 	}
 	total_heal += cur_n->heal;
 	if(total_heal > g->best_heal) {
@@ -58,7 +58,7 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 			g->best_path_length++;
 		}
 	}
-	cur_power = rint(cur_power * (1 - g->power_reduction));
+	cur_power = cur_power * (1 - g->power_reduction);
 
 	for(int i = 0; i < cur_n->adj_size; i++) {
 		DFS(cur_n->adj[i], hop_num + 1, g, total_heal, cur_power, cur_n);
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
 	for(int i = 0; i < g->best_path_length; i++) {
 		printf("%s %d \n", g->best_path[offset - i]->name, g->healing[offset-i]);
 	}
-	printf("Total Healing: %d \n", g->best_heal);
+	printf("Total_Healing %d \n", g->best_heal);
 
 
 return 0; }
