@@ -19,20 +19,25 @@ typedef struct node {
 } Node;
 
 typedef struct global {
-	int num_jumps, best_heal;
+	int num_jumps; 
+	int	best_heal;
     double power_reduction;
+	int best_path_length;
+	Node ** best_path;
+	int *healing;
 
 } Global;
 
-void DFS(Node *n, int hop_num, Global *g, int total_heal, double cur_power) {
-	if(n->visited == 1 || hop_num > g->num_jumps) {
+void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, Node *from) {
+	
+	if(cur_n->visited == 1 || hop_num > g->num_jumps) {
 		return;
 	}
-	n->visited = 1;
+	cur_n->visited = 1;
 	
-	if(cur_power + n->cur_PP > n->max_PP) {
-        total_heal += n->max_PP - n->cur_PP;
-    }
+	if(cur_power + cur_n->cur_PP > cur_n->max_PP) {
+        total_heal += cur_n->max_PP - cur_n->cur_PP;
+	}
     else {
 	    total_heal += cur_power;
 	}
@@ -41,10 +46,10 @@ void DFS(Node *n, int hop_num, Global *g, int total_heal, double cur_power) {
 	}
 	cur_power = rint(cur_power * (1 - g->power_reduction));
 
-	for(int i = 0; i < n->adj_size; i++) {
-		DFS(n->adj[i], hop_num + 1, g, total_heal, cur_power);
+	for(int i = 0; i < cur_n->adj_size; i++) {
+		DFS(cur_n->adj[i], hop_num + 1, g, total_heal, cur_power, cur_n);
 	}
-	n->visited = 0;
+	cur_n->visited = 0;
 }
 
 
@@ -59,6 +64,9 @@ int main(int argc, char **argv) {
 	initial_power = atoi(argv[4]);
 	g->power_reduction = atof(argv[5]);
 	g->best_heal = 0;
+	g->best_path_length = 0;
+	g->best_path = (Node **) malloc(g->num_jumps * sizeof(Node *));
+	g->healing = (int *) malloc(g->num_jumps * sizeof(int));
 
 	char name[100];
 	int x, y, cur_PP, max_PP, num_nodes = 0;
@@ -124,7 +132,7 @@ int main(int argc, char **argv) {
 				x_dist = nodes[i]->x - nodes[j]->x;
 				y_dist = nodes[i]->y - nodes[j]->y;
 				if((x_dist*x_dist + y_dist*y_dist) <= (initial_range*initial_range)) {
-					DFS(nodes[j], 1, g, 0, initial_power); // starting node, hop_num, pointer to global variables
+					DFS(nodes[j], 1, g, 0, initial_power, NULL); // starting node, hop_num, pointer to globals, total healing, starting power
 				}
 			}
 		}		
