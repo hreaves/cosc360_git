@@ -19,33 +19,46 @@ typedef struct node {
 } Node;
 
 typedef struct global {
-	int initial_range, jump_range, num_jumps, initial_power;
+	int num_jumps, best_heal;
     double power_reduction;
+
 } Global;
 
-void DFS(Node *n, int hop_num, Global *g) {
-	if(n->visited == 1 || g->num_jumps == hop_num) {
+void DFS(Node *n, int hop_num, Global *g, int total_heal, double cur_power) {
+	if(n->visited == 1 || hop_num > g->num_jumps) {
 		return;
 	}
 	n->visited = 1;
-	hop_num++;
-	printf("Node: %s Hope: %d \n", n->name, hop_num);
+	
+	if(cur_power + n->cur_PP > n->max_PP) {
+        total_heal += n->max_PP - n->cur_PP;
+    }
+    else {
+	    total_heal += cur_power;
+	}
+	if(total_heal > g->best_heal) {
+		g->best_heal = total_heal;
+	}
+	cur_power = rint(cur_power * (1 - g->power_reduction));
+
 	for(int i = 0; i < n->adj_size; i++) {
-		DFS(n->adj[i], hop_num, g);
+		DFS(n->adj[i], hop_num + 1, g, total_heal, cur_power);
 	}
 	n->visited = 0;
 }
 
 
 int main(int argc, char **argv) {
-	
+	int initial_range, jump_range, initial_power;
+
 	Global *g;
 	g = (Global *) malloc(sizeof(Global));
-	g->initial_range = atoi(argv[1]);
-	g->jump_range = atoi(argv[2]);
+	initial_range = atoi(argv[1]);
+	jump_range = atoi(argv[2]);
 	g->num_jumps = atoi(argv[3]);
-	g->initial_power = atoi(argv[4]);
+	initial_power = atoi(argv[4]);
 	g->power_reduction = atof(argv[5]);
+	g->best_heal = 0;
 
 	char name[100];
 	int x, y, cur_PP, max_PP, num_nodes = 0;
@@ -82,7 +95,7 @@ int main(int argc, char **argv) {
 			}
 			x_dist = nodes[i]->x - nodes[j]->x;
 			y_dist = nodes[i]->y - nodes[j]->y;
-			if((x_dist*x_dist + y_dist*y_dist) <= (g->jump_range*g->jump_range)) {
+			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
 				nodes[i]->adj_size++;
 			}
 		}
@@ -98,24 +111,25 @@ int main(int argc, char **argv) {
 			}
             x_dist = nodes[i]->x - nodes[j]->x;
             y_dist = nodes[i]->y - nodes[j]->y;
-			if((x_dist*x_dist + y_dist*y_dist) <= (g->jump_range*g->jump_range)) {
+			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
                 nodes[i]->adj[k] = nodes[j];
 				k++;
 			}
 		}
 	}
-	// find nodes within initial range of Urgosa and run DFS on thme
+	// find nodes within initial range of Urgosa and run DFS on them
 	for(int i = 0; i < num_nodes; i++) {
 		if(strcmp(nodes[i]->name, "Urgosa_the_Healing_Shaman") == 0) {
 			for(int j = 0; j < num_nodes; j++) {
 				x_dist = nodes[i]->x - nodes[j]->x;
 				y_dist = nodes[i]->y - nodes[j]->y;
-				if((x_dist*x_dist + y_dist*y_dist) <= (g->initial_range*g->initial_range)) {
-					DFS(nodes[j], 0, g); // starting node, hop_num, pointer to global variables
+				if((x_dist*x_dist + y_dist*y_dist) <= (initial_range*initial_range)) {
+					DFS(nodes[j], 1, g, 0, initial_power); // starting node, hop_num, pointer to global variables
 				}
 			}
 		}		
 	}
+	printf("Total Healing: %d \n", g->best_heal);
  
 
 return 0; }
