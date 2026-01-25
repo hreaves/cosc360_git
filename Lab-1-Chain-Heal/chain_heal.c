@@ -24,7 +24,16 @@ typedef struct global {
 } Global;
 
 void DFS(Node *n, int hop_num, Global *g) {
-
+	if(n->visited == 1 || g->num_jumps == hop_num) {
+		return;
+	}
+	n->visited = 1;
+	hop_num++;
+	printf("Node: %s Hope: %d \n", n->name, hop_num);
+	for(int i = 0; i < n->adj_size; i++) {
+		DFS(n->adj[i], hop_num, g);
+	}
+	n->visited = 0;
 }
 
 
@@ -52,6 +61,8 @@ int main(int argc, char **argv) {
 		strcpy(n->name, name);
 		num_nodes++;
 		n->prev = prev;
+		n->visited = 0;
+		n->adj_size = 0;
 		prev = n;
 		head = n;
 	}
@@ -65,7 +76,6 @@ int main(int argc, char **argv) {
 	// calculate number of adjacenies
 	int x_dist, y_dist;
 	for(int i = 0; i < num_nodes; i++) {
-		nodes[i]->adj_size = 0;
 		for(int j = 0; j < num_nodes; j++) {
 			if(i==j) {
 				continue;
@@ -96,12 +106,12 @@ int main(int argc, char **argv) {
 	}
 	// find nodes within initial range of Urgosa and run DFS on thme
 	for(int i = 0; i < num_nodes; i++) {
-		if(nodes[i]->name == "Urgosa_the_Healing_Shaman") {
+		if(strcmp(nodes[i]->name, "Urgosa_the_Healing_Shaman") == 0) {
 			for(int j = 0; j < num_nodes; j++) {
 				x_dist = nodes[i]->x - nodes[j]->x;
 				y_dist = nodes[i]->y - nodes[j]->y;
 				if((x_dist*x_dist + y_dist*y_dist) <= (g->initial_range*g->initial_range)) {
-					DFS(nodes[j], 1, g); // starting node, hop_num, pointer to global variables
+					DFS(nodes[j], 0, g); // starting node, hop_num, pointer to global variables
 				}
 			}
 		}		
