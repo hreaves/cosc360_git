@@ -1,12 +1,15 @@
 // COSC360 Lab1 Chain Heal
 // Harrison Reaves
-// Using DFS to get an optimal healing path
+/* This program reads in and stores a text file with the x and y coordinate, current and max pacification points, and the name
+	of each player on your team in Planet of Peacecraft. The initial range, jump range, number of jumps, initial_power,
+	and power_reduction for Urgosa's chain heal spell are given as command line arguments. Using DFS recursively, this program
+	finds the path for Urgosa that will generate the greatest amount of healing.*/
+// Note: I used AI to help me debug seg faults
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
-
 
 typedef struct node {
 	char *name;
@@ -29,6 +32,7 @@ typedef struct global {
 
 } Global;
 
+// DFS to find all simple paths from the starting node given in main
 void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, Node *from) {
 	
 	if(cur_n->visited == 1 || hop_num > g->num_jumps) {
@@ -37,6 +41,7 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 	cur_n->visited = 1;
 	cur_n->prev = from;
 
+	// determines how much of the power actually used in healing current node and added to total
 	if(rint(cur_power) + cur_n->cur_PP > cur_n->max_PP) {
         cur_n->heal = cur_n->max_PP - cur_n->cur_PP;
 	}
@@ -44,9 +49,12 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 	    cur_n->heal = rint(cur_power);
 	}
 	total_heal += cur_n->heal;
+	
+	/* if we have new best path, store each node in that path in an array starting with the current one and moving
+		through the prev pointers, store their heal values in the healing array and increment number of nodes in path
+		to help with printing later */
 	if(total_heal > g->best_heal) {
 		g->best_heal = total_heal;
-		
 		int i = 0;
 		g->best_path_length = 0;
 		Node *cur_temp = cur_n;
@@ -58,8 +66,10 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 			g->best_path_length++;
 		}
 	}
-	cur_power = cur_power * (1 - g->power_reduction);
 
+	cur_power = cur_power * (1 - g->power_reduction);
+	
+	// call DFS until all adjacent nodes are visited
 	for(int i = 0; i < cur_n->adj_size; i++) {
 		DFS(cur_n->adj[i], hop_num + 1, g, total_heal, cur_power, cur_n);
 	}
@@ -68,8 +78,12 @@ void DFS(Node *cur_n, int hop_num, Global *g, int total_heal, double cur_power, 
 
 
 int main(int argc, char **argv) {
-	int initial_range, jump_range, initial_power;
+	if (argc < 1) { // use argc to get rid of warning
+		return 1;
+	}
 
+	int initial_range, jump_range, initial_power;
+	// allocate memory for gloab struct and fill out its struct from command line arguments 
 	Global *g;
 	g = (Global *) malloc(sizeof(Global));
 	initial_range = atoi(argv[1]);
@@ -85,6 +99,7 @@ int main(int argc, char **argv) {
 	char name[100];
 	int x, y, cur_PP, max_PP, num_nodes = 0;
 	Node *head = NULL, *prev = NULL;
+	// read every line in txt file, allocate memory for node, fill out node struct variables
 	while(scanf("%d %d %d %d %99s", &x, &y, &cur_PP, &max_PP, name) == 5) { 
 		Node *n;
 		n = (Node *) malloc(sizeof(Node));
@@ -100,16 +115,16 @@ int main(int argc, char **argv) {
 		n->adj_size = 0;
 		n->heal = 0;
 		prev = n;
-		head = n;
+		head = n; // last node will be the starting point for reading all nodes into the array
 	}
-
+	// allocate memory for every node and store in an array moving through the prev pointers
 	Node **nodes;
 	nodes = (Node **) malloc(num_nodes * (sizeof(Node*)));
 	for(int i = 0; i < num_nodes; i++) {
 		nodes[i] = head;
 		head = head->prev;
 	}
-	// calculate number of adjacenies
+	// calculate number of adjacenies and allocate memory for adjency lists
 	int x_dist, y_dist;
 	for(int i = 0; i < num_nodes; i++) {
 		for(int j = 0; j < num_nodes; j++) {
@@ -118,13 +133,14 @@ int main(int argc, char **argv) {
 			}
 			x_dist = nodes[i]->x - nodes[j]->x;
 			y_dist = nodes[i]->y - nodes[j]->y;
+			// euclidean distance within jump range
 			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
 				nodes[i]->adj_size++;
 			}
 		}
 		nodes[i]->adj = (Node **) malloc(nodes[i]->adj_size * sizeof(Node*));
 	}
-	// fill up the adjacency lists
+	// fill up the adjacency lists for each node
 	int k;
 	for(int i = 0; i < num_nodes; i++) {
 		k = 0;
@@ -134,6 +150,7 @@ int main(int argc, char **argv) {
 			}
             x_dist = nodes[i]->x - nodes[j]->x;
             y_dist = nodes[i]->y - nodes[j]->y;
+			// euclidean distance within jump range
 			if((x_dist*x_dist + y_dist*y_dist) <= (jump_range*jump_range)) {
                 nodes[i]->adj[k] = nodes[j];
 				k++;
@@ -146,13 +163,14 @@ int main(int argc, char **argv) {
 			for(int j = 0; j < num_nodes; j++) {
 				x_dist = nodes[i]->x - nodes[j]->x;
 				y_dist = nodes[i]->y - nodes[j]->y;
+				// euclidean distance within initial range
 				if((x_dist*x_dist + y_dist*y_dist) <= (initial_range*initial_range)) {
-					DFS(nodes[j], 1, g, 0, initial_power, NULL); // starting node, hop_num, pointer to globals, total healing, starting power
+					DFS(nodes[j], 1, g, 0, initial_power, NULL); // starting node, hop_num, pointer to globals, total healing, starting power, former node
 				}
 			}
 		}		
 	}
-
+	// print the best path out reversed
 	int offset = g->best_path_length - 1;
 	for(int i = 0; i < g->best_path_length; i++) {
 		printf("%s %d \n", g->best_path[offset - i]->name, g->healing[offset-i]);
