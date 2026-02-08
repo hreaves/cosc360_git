@@ -3,85 +3,176 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "fields.h"
-#include "jval.h"
 #include "jrb.h"
+#include "jval.h"
+#include "dllist.h"
+
+int error_flag = 0;
 
 typedef struct person {
-	char *name; // point to array[0] since size unknown
+	char *name;
 	char *sex; // Male, Female, or Unknown
-	char *father; // Name or Unknown 
-	char *mother; // Name or Unknown
-	char *children; // Names or None
+	struct person *father; // Name or Unknown 
+	struct person *mother; // Name or Unknown
+	Dllist children; // Names or None
 } Person;
 
-void check_name(Person *p, JRB tree, IS is) {
-	char temp_name[100];
+Person *name_check(JRB tree, IS is) {
+	JRB tmp;
+	Person *p;
+	char tmp_name[100];
 	strcpy(tmp_name, is->fields[1]);
-    for (i = 1; i < is->NF; i++) {
-		strcat(tmp_name, " ");
-        strcat(tmp->name, is->fields[i]);
-	}
-	tmp = jrb_find_str(tree, tmp_name);
+    for (int i = 2; i < is->NF; i++) {
+        strcat(tmp_name, " ");
+        strcat(tmp_name, is->fields[i]);
+    }
+
+    tmp = jrb_find_str(tree, tmp_name);
+
     if(tmp==NULL) { // name doesnt exist
-		p = (Person *) malloc(size(Person));
-		jrb_insert_str(tree, p->name, p);
-		p->name = (char *) malloc(100);
-		strcpy(p->name, tmp_name);
+        p = (Person *) malloc(sizeof(Person));
+        p->name = strdup(tmp_name);
+        p->sex = NULL;
+        p->father = NULL;
+        p->mother = NULL;
+		p->children = new_dllist();
+        jrb_insert_str(tree, p->name, new_jval_v(p));
+    }
+    else {
+        p = (Person*) tmp->val.v;
+    }
+	return p;
+}
+
+void connection_check(Person *child, Person *parent, char *sex) {
+	if(strcmp(sex, "M")==0) {
+		if(child->father != NULL) {
+			if(child->father != parent) {
+				fprintf(stderr, "Error: Discordant Names\n");
+				error_flag = -1;
+			}
+		}
+		else {
+			child->father = parent;
+		}
+	}
+	else if (strcmp(sex, "F")==0) {
+		if(child->mother != NULL) {
+			if(child->mother != parent) {
+				fprintf(stderr, "Error: Discordant Names\n");
+				error_flag = -1;
+			}
+		}
+		else {
+			child->mother = parent;
+		}
+	}
+	
+	Dllist ptr;
+	for (ptr = parent->children->flink; ptr != parent->children; ptr = ptr->flink) {
+		Person *curr = (Person *) ptr->val.v;
+		if(curr == child) {
+			return;
+		}
+	}
+	dll_append(parent->children, new_jval_v(child));
+}
+
+void sex_check(Person *p, char *temp_sex) {
+	if(p->sex != NULL) {
+		if(strcmp(p->sex, temp_sex) !=0) {
+			fprintf(stderr, "Error: Discordant Sex\n");
+			error_flag = -1;					
+		}
 	}
 	else {
-		curr_person = (JRB) tmp->val.v;
+		p->sex = strdup(temp_sex);
 	}
 }
 
-int main(int argc, char **arv) {
+int main(int argc, char **argv) {
 	
 	IS is;
-	Jval jv;
-	JRB tree, tmp;
-
-	int i;
-
+	JRB tree;
+	
 	is = new_inputstruct(argv[1]);
+
 	if (is == NULL) {
 		perror(argv[1]);
 		exit(1);
 	}
-	Person *curr_person;
-	Person *relative;
+
+	tree = make_jrb();
+
+	Person *curr_person = NULL;
+	Person *relative = NULL;
 	while(get_line(is) >= 0) {
 
 		if (strcmp(is->fields[0], "PERSON")==0) {
-			check_name(curr_person, tree, is);
+			curr_person = name_check(tree, is);
 		}
 		else if (strcmp(is->fields[0], "FATHER")==0) {
-			check_name(relative, tree, is);
-			strcpy(relative->children, curr_person->name);
-			strcpy(curr_person->father, relative->name);
+			relative = name_check(tree, is);
+			connection_check(curr_person, relative, "M");
+			sex_check(relative, "Male");
 		}
 		else if (strcmp(is->fields[0], "MOTHER")==0) {
-			check_name(relative, tree, is);
-			strcpy(relative->children, curr_person->name);
-			strcpy(curr_person->mother, relative->name);
+			relative = name_check(tree, is);
+			connection_check(curr_person, relative, "F");
+			sex_check(relative, "Female");
 		}
 		else if (strcmp(is->fields[0], "FATHER_OF")==0) {
-            check_name(relative, tree, is);
-            strcpy(relative->father, curr_person->name);
-			strcpy(curr_person->children, relative->name);
-        }
+			relative = name_check(tree, is);
+			connection_check(relative, curr_person, "M");
+			sex_check(curr_person, "Male");
+		}
 		else if (strcmp(is->fields[0], "MOTHER_OF")==0) {
-			check_name(relative, tree, is);
-			strcpy(relative->mother, curr_person->name);
-			strcpy(curr_person->children, relative->name);
+			relative = name_check(tree, is);
+			connection_check(relative, curr_person, "F");
+			sex_check(curr_person, "Female");
 		}
 		else if (strcmp(is->fields[0], "SEX")==0) {
-			strcpy(curr_person->sex, is->fields[1]);
+			if(strcmp(is->fields[1], "M")==0) {
+				sex_check(curr_person, "Male");
+			}
+			else {
+				sex_check(curr_person, "Female");
+			}
+		}
+		if(error_flag == -1) {
+			return -1;
 		}
 	}
 
 	jettison_inputstruct(is);
+	
+	JRB node;
+	jrb_traverse(node, tree) {
+		Person *p = (Person *) node->val.v;
+		printf("%s\n", p->name);
+		
+		if(p->sex != NULL) {printf("Sex: %s\n", p->sex);}
+		else {printf("Sex: Unknown\n");}
+		
+		if(p->father != NULL) {printf("Father: %s\n", p->father->name);}
+		else {printf("Father: Unknown\n");}
+		
+		if(p->mother != NULL) {printf("Mother: %s\n", p->mother->name);}
+		else{printf("Mother: Unknown\n");}
+		if(dll_empty(p->children)) {printf("Children: None\n");}
+		else {
+			printf("Children: \n");
+			Dllist ptr;
+			for (ptr = p->children->flink; ptr != p->children; ptr = ptr->flink) {
+				Person *c = (Person *) ptr->val.v;
+				printf("%s\n", c->name);
+			}
+		}
 
-
+		printf("\n");
+	}
 
 	return 0;
 }
