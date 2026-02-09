@@ -23,6 +23,7 @@ Person *name_check(JRB tree, IS is) {
 	JRB tmp;
 	Person *p;
 	char tmp_name[100];
+	
 	strcpy(tmp_name, is->fields[1]);
     for (int i = 2; i < is->NF; i++) {
         strcat(tmp_name, " ");
@@ -109,9 +110,11 @@ int main(int argc, char **argv) {
 	Person *curr_person = NULL;
 	Person *relative = NULL;
 	while(get_line(is) >= 0) {
-
+		if(is->NF == 0) {
+			continue;
+		}
 		if (strcmp(is->fields[0], "PERSON")==0) {
-			curr_person = name_check(tree, is);
+				curr_person = name_check(tree, is);
 		}
 		else if (strcmp(is->fields[0], "FATHER")==0) {
 			relative = name_check(tree, is);
@@ -153,21 +156,21 @@ int main(int argc, char **argv) {
 		Person *p = (Person *) node->val.v;
 		printf("%s\n", p->name);
 		
-		if(p->sex != NULL) {printf("Sex: %s\n", p->sex);}
-		else {printf("Sex: Unknown\n");}
+		if(p->sex != NULL) {printf("  Sex: %s\n", p->sex);}
+		else {printf("  Sex: Unknown\n");}
 		
-		if(p->father != NULL) {printf("Father: %s\n", p->father->name);}
-		else {printf("Father: Unknown\n");}
+		if(p->father != NULL) {printf("  Father: %s\n", p->father->name);}
+		else {printf("  Father: Unknown\n");}
 		
-		if(p->mother != NULL) {printf("Mother: %s\n", p->mother->name);}
-		else{printf("Mother: Unknown\n");}
-		if(dll_empty(p->children)) {printf("Children: None\n");}
+		if(p->mother != NULL) {printf("  Mother: %s\n", p->mother->name);}
+		else{printf("  Mother: Unknown\n");}
+		if(dll_empty(p->children)) {printf("  Children: None\n");}
 		else {
-			printf("Children: \n");
+			printf("  Children: \n");
 			Dllist ptr;
 			for (ptr = p->children->flink; ptr != p->children; ptr = ptr->flink) {
 				Person *c = (Person *) ptr->val.v;
-				printf("%s\n", c->name);
+				printf("    %s\n", c->name);
 			}
 		}
 
