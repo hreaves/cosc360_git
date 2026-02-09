@@ -11,8 +11,7 @@ fi
 enum=1
 n=0
 while [ $enum -le 100 ]; do
-  valgrind --leak-check=full ./$program $ge/$enum.txt 2>&1 | grep "in use at exit" | awk '{print "Test '$enum': " $6 " " $7}'
-  out=`$dir/gradescript $enum 2>&1 | head -n 1`
+  out=`valgrind --leak-check=full --error-exitcode=1 $dir/gradescript $enum 2>&1 | head -n 1`
   echo $out
   n=`echo $n $out | awk '{ print $1 + ($NF == "correct.") }'`
 

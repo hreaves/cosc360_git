@@ -17,6 +17,7 @@ typedef struct person {
 	Dllist children; // Names or None
 	int visiting;
 	int visited;
+	int printed;
 } Person;
 
 Person *name_check(JRB tree, IS is) {
@@ -41,6 +42,7 @@ Person *name_check(JRB tree, IS is) {
 		p->children = new_dllist();
         p->visited = 0;
 		p->visiting = 0;
+		p->printed = 0;
 		jrb_insert_str(tree, p->name, new_jval_v(p));
     }
     else {
@@ -114,6 +116,40 @@ void cycle_check(Person* curr_person) {
 	curr_person->visiting = 0;
 }
 
+void print(Person *p) {
+	if(p->printed) {
+		return;
+	}
+	if(p->father != NULL && !p->father->printed) {
+		print(p->father);
+	}
+	if(p->mother != NULL && !p->mother->printed) {
+		print(p->mother);
+	}
+
+    printf("%s\n", p->name);
+
+    if(p->sex != NULL) {printf("  Sex: %s\n", p->sex);}
+    else {printf("  Sex: Unknown\n");}
+
+    if(p->father != NULL) {printf("  Father: %s\n", p->father->name);}
+    else {printf("  Father: Unknown\n");}
+
+    if(p->mother != NULL) {printf("  Mother: %s\n", p->mother->name);}
+    else{printf("  Mother: Unknown\n");}
+    if(dll_empty(p->children)) {printf("  Children: None\n");}
+    else {
+        printf("  Children: \n");
+        Dllist ptr;
+        for (ptr = p->children->flink; ptr != p->children; ptr = ptr->flink) {
+           Person *c = (Person *) ptr->val.v;
+           printf("    %s\n", c->name);
+        }
+    }
+    printf("\n");
+	p->printed = 1;
+}
+
 int main(int argc, char **argv) {
 	
 	IS is;
@@ -177,28 +213,18 @@ int main(int argc, char **argv) {
 
 	jrb_traverse(node, tree) {
 		Person *p = (Person *) node->val.v;
-		printf("%s\n", p->name);
-		
-		if(p->sex != NULL) {printf("  Sex: %s\n", p->sex);}
-		else {printf("  Sex: Unknown\n");}
-		
-		if(p->father != NULL) {printf("  Father: %s\n", p->father->name);}
-		else {printf("  Father: Unknown\n");}
-		
-		if(p->mother != NULL) {printf("  Mother: %s\n", p->mother->name);}
-		else{printf("  Mother: Unknown\n");}
-		if(dll_empty(p->children)) {printf("  Children: None\n");}
-		else {
-			printf("  Children: \n");
-			Dllist ptr;
-			for (ptr = p->children->flink; ptr != p->children; ptr = ptr->flink) {
-				Person *c = (Person *) ptr->val.v;
-				printf("    %s\n", c->name);
-			}
-		}
-
-		printf("\n");
+		print(p);
 	}
+	
+	jrb_traverse(node, tree) {
+		Person *p = (Person *) node->val.v;
+		free(p->name);
+		free(p->sex);
+		free_dllist(p->children);
+		free(p);
+	}
+
+	jrb_free_tree(tree);
 
 	return 0;
 }

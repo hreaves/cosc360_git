@@ -27,8 +27,16 @@ fi
   rm -f tmp-$enum-test-stdout.txt tmp-$enum-test-stderr.txt tmp-$enum-correct-stdout.txt tmp-$enum-correct-stderr.txt tmp-$enum-grader.txt
 
 $dir/$program < $ge/$enum.txt > tmp-$enum-correct-stdout.txt 2> tmp-$enum-correct-stderr.txt
-./$program < $ge/$enum.txt > tmp-$enum-test-stdout.txt 2> tmp-$enum-test-stderr.txt
-call="./$program < $ge/$enum.txt"
+valgrind --leak-check=full --error-exitcode=99 ./$program < $ge/$enum.txt > tmp-$enum-test-stdout.txt 2> tmp-$enum-test-stderr.txt
+valgrind_exit=$?
+
+if [ $valgrind_exit -eq 99 ]; then
+  echo "Problem $enum has memory leaks or errors."
+  echo ""
+  echo "Run: valgrind --leak-check=full ./$program < $ge/$enum.txt"
+  exit 0
+fi
+call="valgrind --leak-check=full ./$program < $ge/$enum.txt"
 
 err=`diff tmp-$enum-correct-stderr.txt tmp-$enum-test-stderr.txt | wc | awk '{ print $1 }'`
 if [ `wc tmp-$enum-correct-stderr.txt | awk '{ print $1 }'` != 0 ]; then
