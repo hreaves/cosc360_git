@@ -9,14 +9,14 @@
 #include "jval.h"
 #include "dllist.h"
 
-int error_flag = 0;
-
 typedef struct person {
 	char *name;
 	char *sex; // Male, Female, or Unknown
 	struct person *father; // Name or Unknown 
 	struct person *mother; // Name or Unknown
 	Dllist children; // Names or None
+	int visiting;
+	int visited;
 } Person;
 
 Person *name_check(JRB tree, IS is) {
@@ -39,7 +39,9 @@ Person *name_check(JRB tree, IS is) {
         p->father = NULL;
         p->mother = NULL;
 		p->children = new_dllist();
-        jrb_insert_str(tree, p->name, new_jval_v(p));
+        p->visited = 0;
+		p->visiting = 0;
+		jrb_insert_str(tree, p->name, new_jval_v(p));
     }
     else {
         p = (Person*) tmp->val.v;
@@ -47,12 +49,12 @@ Person *name_check(JRB tree, IS is) {
 	return p;
 }
 
-void connection_check(Person *child, Person *parent, char *sex) {
+void connection_check(Person *child, Person *parent, char *sex, int line) {
 	if(strcmp(sex, "M")==0) {
 		if(child->father != NULL) {
 			if(child->father != parent) {
-				fprintf(stderr, "Error: Discordant Names\n");
-				error_flag = -1;
+				fprintf(stderr, "Bad input -- child with two fathers on line %d\n", line);
+				exit(1);
 			}
 		}
 		else {
@@ -62,8 +64,8 @@ void connection_check(Person *child, Person *parent, char *sex) {
 	else if (strcmp(sex, "F")==0) {
 		if(child->mother != NULL) {
 			if(child->mother != parent) {
-				fprintf(stderr, "Error: Discordant Names\n");
-				error_flag = -1;
+				fprintf(stderr, "Bad input -- child with two mothers on line %d\n", line);
+				exit(1);
 			}
 		}
 		else {
@@ -81,16 +83,35 @@ void connection_check(Person *child, Person *parent, char *sex) {
 	dll_append(parent->children, new_jval_v(child));
 }
 
-void sex_check(Person *p, char *temp_sex) {
+void sex_check(Person *p, char *temp_sex, int line) {
 	if(p->sex != NULL) {
 		if(strcmp(p->sex, temp_sex) !=0) {
-			fprintf(stderr, "Error: Discordant Sex\n");
-			error_flag = -1;					
+			fprintf(stderr, "Bad input - sex mismatch on line %d\n", line);
+			exit(1);					
 		}
 	}
 	else {
 		p->sex = strdup(temp_sex);
 	}
+}
+
+void cycle_check(Person* curr_person) {
+	if(curr_person->visiting == 1) {
+		fprintf(stderr, "Bad input -- cycle in specification\n");
+		exit(1);
+	}
+	if(curr_person->visited == 1) {
+		return;
+	}
+	curr_person->visiting = 1;
+
+	Dllist ptr;
+    for (ptr = curr_person->children->flink; ptr != curr_person->children; ptr = ptr->flink) {
+        Person *p = (Person *) ptr->val.v;
+		cycle_check(p);
+	}
+	curr_person->visited = 1;
+	curr_person->visiting = 0;
 }
 
 int main(int argc, char **argv) {
@@ -118,40 +139,42 @@ int main(int argc, char **argv) {
 		}
 		else if (strcmp(is->fields[0], "FATHER")==0) {
 			relative = name_check(tree, is);
-			connection_check(curr_person, relative, "M");
-			sex_check(relative, "Male");
+			connection_check(curr_person, relative, "M", is->line);
+			sex_check(relative, "Male", is->line);
 		}
 		else if (strcmp(is->fields[0], "MOTHER")==0) {
 			relative = name_check(tree, is);
-			connection_check(curr_person, relative, "F");
-			sex_check(relative, "Female");
+			connection_check(curr_person, relative, "F", is->line);
+			sex_check(relative, "Female", is->line);
 		}
 		else if (strcmp(is->fields[0], "FATHER_OF")==0) {
 			relative = name_check(tree, is);
-			connection_check(relative, curr_person, "M");
-			sex_check(curr_person, "Male");
+			connection_check(relative, curr_person, "M", is->line);
+			sex_check(curr_person, "Male", is->line);
 		}
 		else if (strcmp(is->fields[0], "MOTHER_OF")==0) {
 			relative = name_check(tree, is);
-			connection_check(relative, curr_person, "F");
-			sex_check(curr_person, "Female");
+			connection_check(relative, curr_person, "F", is->line);
+			sex_check(curr_person, "Female", is->line);
 		}
 		else if (strcmp(is->fields[0], "SEX")==0) {
 			if(strcmp(is->fields[1], "M")==0) {
-				sex_check(curr_person, "Male");
+				sex_check(curr_person, "Male", is->line);
 			}
 			else {
-				sex_check(curr_person, "Female");
+				sex_check(curr_person, "Female", is->line);
 			}
-		}
-		if(error_flag == -1) {
-			return -1;
 		}
 	}
 
 	jettison_inputstruct(is);
 	
 	JRB node;
+    jrb_traverse(node, tree) {
+        Person *p = (Person *) node->val.v;
+		cycle_check(p);
+	}
+
 	jrb_traverse(node, tree) {
 		Person *p = (Person *) node->val.v;
 		printf("%s\n", p->name);
