@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     fseek(f_input, 0, SEEK_END);
 	input_size_bytes = ftell(f_input);
 
-	if(input_size_bytes < 0 ) {fprintf(stderr, "Error: file is not the correct size.\n"); exit(1);}
+	if(input_size_bytes < 4 ) {fprintf(stderr, "Error: file is not the correct size.\n"); exit(1);}
 
     Node *root = new_node();
 	
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
 					printf("%s", curr->s_one);
 					curr = root;
 				}
-				else {fprintf(stderr, "unrecognizable sequence\n"); exit(1);}
+				else {fprintf(stderr, "Unrecognized bits\n"); exit(1);}
 			}
 			else {
                 if(curr->zero != NULL) {
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 					printf("%s", curr->s_zero);
 					curr = root;
                 }
-				else {fprintf(stderr, "unrecognizable sequence\n"); exit(1);}
+				else {fprintf(stderr, "Unrecognized bits\n"); exit(1);}
 			}
 		}
 	}
