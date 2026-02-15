@@ -8,112 +8,132 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct huff_node {
-	struct huff_node *zero;
-	struct huff_node *one;
-	char *s_zero;
-	char *s_one;
-}; Node
+typedef struct huff_node {
+    struct huff_node *zero;
+    struct huff_node *one;
+    char *s_zero;
+    char *s_one;
+} Node;
 
-int path(Node *root, int ascii, File *f_code, int j, int final_val) {
+Node *new_node() {
+	Node *n;
+    n = (Node *) malloc(sizeof(Node));
+    n->zero = NULL;
+    n->one = NULL;
+    n->s_zero = NULL;
+    n->s_one = NULL;
+	return n;
+}
 
-	int val = fgetc(f_code);
-    if((val != 30 || val != 31) && j == 0) {
-		perror("code file improper format");
-        exit(0);
-    }
-	if (val != 30 || val != 31) {
-        if(final_val == 30) {
-			
+void insert_code(Node *root, char *string, char *bits) {
+	Node *curr = root;
+	for (int i = 0; bits[i] != '\0'; i++) {
+		if(bits[i] == 48) {
+			if (bits[i+1] != '\0') {
+				if(curr->zero == NULL) {
+					curr->zero = new_node();
+				}
+				curr = curr->zero;
+			}
+			else {
+				curr->s_zero = strdup(string);
+			}
 		}
+
 		else {
-			
+			if (bits[i+1] != '\0') {
+				if(curr->one == NULL) {
+				    curr->one = new_node();
+				}
+				curr = curr->one;
+            }
+            else {
+                curr->s_one = strdup(string);
+            }
 		}
-
-		return j;
-    }
-    j++;
-	final_val = val;
-	if(root->zero == NULL && val == 30) {
-		Node *new_node = malloc(sizeof(Node));
-		new_node->zero = NULL;
-		new_node->one = NULL;
-		new_node->s_zero = NULL;
-		new_node->s_one = NULL;
-		root->zero = new_node;
-		path(new_node, ascii, f_code, j+1, final_val);
-	}
-	else {
-		path(root->zero, ascii, f_code, j+1, final_val);
-	}
-
-	if(root->one == NULL && val == 31) {
-		Node *new_node = malloc(sizeof(Node));
-        new_node->zero = NULL;
-        new_node->one = NULL;
-        new_node->s_zero = NULL;
-        new_node->s_one = NULL;
-        root->one = new_node;
-		path(new_node, ascii, f_code, j+1, final_val);
-	}
-	else {
-		path(root->first, ascii, f_code, j+1, final_val);
 	}
 }
 
-
 int main(int argc, char **argv) {
+
+	FILE *f_code, *f_input;
+    int input_size_bits, input_size_bytes;
+
+	f_code = fopen(argv[1], "rb");
+    f_input = fopen(argv[2], "rb");
+    if (f_code == NULL || f_input == NULL) {perror("incorrect format"); exit(1);}
+
+    fseek(f_input, 0, SEEK_END);
+	input_size_bytes = ftell(f_input) - 4;
+
+	if(input_size_bytes < 0 ) {perror("input file too small"); exit(1);}
+
+    Node *root = new_node();
 	
-	File *f_code, *f_input;
-	int f_code_size1, f_input_size;
-	int *code, *input;
-	int ascii, skip;
+	int ascii_int = 0, i = 0;
+	char ascii_string[10001];
+	char ascii_bits[10001];
 
-	f_code = open(argv[1], O_RDONLY);
-	f_input = open(argv[2], O_RDONLY);
-	if (f_code < 0 || f_input < 0) { 
-		perror("incorrect format"); exit(1); 
-	}
-
-	// get last four bytes and file size, then return to beginning
-	fseek(f_code, -4, SEEK_END);
-	fread(f_code_size1, sizeof(int), 1, f_code);
-	fseek(f_code, 0, SEEK_SET);
-	
-	Node *root;
-	root = (Node *) malloc(sizeof(Node));
-	root->zero = NULL;
-    root->one = NULL;
-    root->s_zero = NULL;
-    root->s_one = NULL;
-
-	while (1) {
-		ascii = fgetc(f_code);
-		if((ascii == EOF) && (i != (f_code_size/8) + 4 )) {
-			perror("code file too small");
-			exit(0);
+	while(1) {
+		if(ascii_int == EOF) {
+			break;
 		}
-		if(ascii == EOF) {
-            return;
-        }
-		skip = path(root, ascii, f_code, 0);
-		i += skip + 1;
-		fseek(f_code, skip, SEEK_CUR);
+		i = 0;
+		while ((ascii_int = fgetc(f_code)) != EOF && ascii_int != '\0') {
+			ascii_string[i] = (char) ascii_int;
+			i++;
+		}
+		ascii_string[i] = '\0';
+		i = 0;
+		while ((ascii_int = fgetc(f_code)) != EOF && ascii_int != '\0') {
+			ascii_bits[i] = (char)ascii_int;
+			i++;
+		}
+		ascii_bits[i] = '\0';
+		insert_code(root, ascii_string, ascii_bits);
 	}
 
 
-
-	// After reading code
-	if(f_code_size1 != f_code_size2 - 4) {
-		perror("mismatched code sizes"); exit(1);	
-	}
-	// after reading input
-	if(f_input_size < 4) {
-		perror("input file too small"); exit(1);
+	fseek(f_input, -4, SEEK_END);
+    fread(&input_size_bits, sizeof(int), 1, f_input);
+	if(input_size_bytes != (input_size_bits + 7) / 8) {
+        perror("mismatching input file size"); exit(1);
+    }
+	fseek(f_input, 0, SEEK_SET);
+	
+	int byte, bit, bit_count = 0;
+	Node *curr = root;
+	for(int i = 0; i < input_size_bytes; i++) {
+		byte = fgetc(f_input);
+		for(int j = 0; j < 8; j++) {
+			if(bit_count == input_size_bits) {break;}
+			bit = (byte >> j) & 1;
+			bit_count++;
+			if(bit == 1) {
+				if(curr->one != NULL) {
+					curr = curr->one;
+				}
+				else if(curr->s_one != NULL) {
+					printf("%s ", curr->s_one);
+					curr = root;
+				}
+				else {perror("unrecognizable sequence"); exit(1);}
+			}
+			else {
+                if(curr->zero != NULL) {
+                    curr = curr->zero;
+                }
+                else if(curr->s_zero != NULL) {
+					printf("%c ", curr->s_zero[i]);
+					curr = root;
+                }
+				else {perror("unrecognizable sequence"); exit(1);}
+			}
+		}
 	}
 
 	fclose(f_code);
-	fclose(f_input);
+    fclose(f_input);
 
-	return 0;
+	return 0;   
 }
