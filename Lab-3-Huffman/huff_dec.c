@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
 
 	f_code = fopen(argv[1], "rb");
     f_input = fopen(argv[2], "rb");
-    if (f_code == NULL || f_input == NULL) {perror("incorrect format"); exit(1);}
+    if (f_code == NULL || f_input == NULL) {fprintf(stderr, "incorrect format\n"); exit(1);}
 
     fseek(f_input, 0, SEEK_END);
-	input_size_bytes = ftell(f_input) - 4;
+	input_size_bytes = ftell(f_input);
 
-	if(input_size_bytes < 0 ) {perror("input file too small"); exit(1);}
+	if(input_size_bytes < 0 ) {fprintf(stderr, "Error: file is not the correct size.\n"); exit(1);}
 
     Node *root = new_node();
 	
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
 
 	fseek(f_input, -4, SEEK_END);
     fread(&input_size_bits, sizeof(int), 1, f_input);
-	if(input_size_bytes != (input_size_bits + 7) / 8) {
-        perror("mismatching input file size"); exit(1);
+	if(input_size_bytes - 4 != (input_size_bits + 7) / 8) {
+        fprintf(stderr, "Error: Total bits = %d, but file's size is %d\n", input_size_bits, input_size_bytes); exit(1);
     }
 	fseek(f_input, 0, SEEK_SET);
 	
@@ -114,20 +114,20 @@ int main(int argc, char **argv) {
 					curr = curr->one;
 				}
 				else if(curr->s_one != NULL) {
-					printf("%s ", curr->s_one);
+					printf("%s", curr->s_one);
 					curr = root;
 				}
-				else {perror("unrecognizable sequence"); exit(1);}
+				else {fprintf(stderr, "unrecognizable sequence\n"); exit(1);}
 			}
 			else {
                 if(curr->zero != NULL) {
                     curr = curr->zero;
                 }
                 else if(curr->s_zero != NULL) {
-					printf("%c ", curr->s_zero[i]);
+					printf("%s", curr->s_zero);
 					curr = root;
                 }
-				else {perror("unrecognizable sequence"); exit(1);}
+				else {fprintf(stderr, "unrecognizable sequence\n"); exit(1);}
 			}
 		}
 	}
