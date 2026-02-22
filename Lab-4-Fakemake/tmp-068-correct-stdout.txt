@@ -1,1 +1,0 @@
-gcc -c -O tf4.c
