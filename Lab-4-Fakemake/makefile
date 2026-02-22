@@ -1,15 +1,10 @@
-CC = gcc
-INCLUDES = -I/home/mrjantz/cs360/include
-CFLAGS = $(INCLUDES)
-LIBDIR = /home/mrjantz/cs360/lib
-LIBS = $(LIBDIR)/libfdr.a
+include = /home/mrjantz/cs360/include
+lib = /home/mrjantz/cs360/lib
 
-EXECUTABLES = fakemake 
-
-all: $(EXECUTABLES)
-
-fakemake: fakemake.c
-	$(CC) $(CFLAGS) -o fakemake fakemake.c $(LIBS)
+all: fakemake
 
 clean:
-	rm core $(EXECUTABLES) fakemake
+	rm -f fakemake
+
+fakemake: fakemake.c
+	gcc -g -Wall -Wextra -o fakemake -I$(include) fakemake.c $(lib)/libfdr.a

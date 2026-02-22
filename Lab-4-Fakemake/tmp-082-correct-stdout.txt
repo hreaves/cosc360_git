@@ -1,0 +1,10 @@
+gcc -c tf4.c
+gcc -c tf3.c
+gcc -c testmain.c
+gcc -o testexec tf4.o tf2.o tf3.o testmain.o testlib.a -lm
+You're dangerous.
+With a taste of your lips.
+intoxicate me now
+Baby, give me it.
+I'm on a ride.
+The log base 10 of 12345.6789 is 4.0915

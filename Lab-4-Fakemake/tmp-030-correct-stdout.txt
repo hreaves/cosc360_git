@@ -1,0 +1,2 @@
+gcc -c -O testmain.c
+gcc -c -O tf3.c

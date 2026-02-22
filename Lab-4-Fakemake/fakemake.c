@@ -11,27 +11,39 @@
 #include "fields.h"
 #include "dllist.h"
 #include "jval.h"
+#include <sys/wait.h>
+
+void free_mem(Dllist *lists, IS is, char *exe_name) {
+	Dllist ptr;
+	for (int i = 0; i < 5; i++) {
+		dll_traverse(ptr, lists[i]) {
+			free(ptr->val.s);
+		}
+		free_dllist(lists[i]);
+	}
+    jettison_inputstruct(is);
+    free(exe_name);
+}
 
 int main(int argc, char **argv) {
   
-	IS is;	
+	IS is;
 
 	if(argc == 1) {is = new_inputstruct("fmakefile");}
 	else {is = new_inputstruct(argv[1]);}
 	
+	char *exe_name = NULL;
+
+	Dllist lists[5]; // 0 = C, 1 = H, 2 = F, 3 = L, 4 = C but with .o instead of .c
+    for (int i = 0; i < 5; i++) {lists[i] = new_dllist();}
+
 	if (is == NULL) {
 		printf("Input file does not exist\n");
+		free_mem(lists, is, exe_name);
 		exit(1);
 	}
-	// filename check
-	/*
-	printf("filename: %s\n", is->name);
-	*/
-
-	char *exe_name = NULL;
-	Dllist lists[5]; // 0 = C, 1 = H, 2 = F, 3 = L, 4 = C but with .o instead of .c
-	for (int i = 0; i < 5; i++) {lists[i] = new_dllist();}
 	
+	int e_cnt = 0;
 	while(get_line(is) >= 0) {
 		if(is->NF == 0) {continue;}  // skip blank lines
 		if(strcmp(is->fields[0], "C")==0) {
@@ -55,13 +67,20 @@ int main(int argc, char **argv) {
             }
 		}
 		else if(strcmp(is->fields[0], "E")==0) {
-			exe_name = strdup(is->fields[1]);   
+			if(e_cnt> 0) {
+				fprintf(stderr, "fmakefile (%d) cannot have more than one E line\n", is->line);
+				free_mem(lists, is, exe_name);
+				exit(1);
+			}
+			exe_name = strdup(is->fields[1]);
+			e_cnt++;
 		}
 	}
 	
 	if(exe_name == NULL) {
-        fprintf(stderr, "no executable name\n");
-        exit(1);
+        fprintf(stderr, "No executable specified\n");
+        free_mem(lists, is, exe_name);
+		exit(1);
     }
 
 	Dllist ptr;
@@ -72,7 +91,8 @@ int main(int argc, char **argv) {
 	dll_traverse(ptr, lists[1]) {
 		exists = stat(ptr->val.s, &buf);
 		if (exists < 0) {
-			fprintf(stderr, "%s not found\n", ptr->val.s);
+			fprintf(stderr, "fmakefile: %s: No such file or directory\n", ptr->val.s);
+			free_mem(lists, is, exe_name);
 			exit(1);
 		} 
 		else {
@@ -85,12 +105,15 @@ int main(int argc, char **argv) {
 	time_t c_time, o_max = 0;
 	char *c_file, *o_file;
 	char command[1000];
+	int status;
+	Dllist ptr_2;
 
 	dll_traverse(ptr, lists[0]) {
 		c_file = ptr->val.s;
 		exists = stat(c_file, &buf);
         if (exists < 0) {
-            fprintf(stderr, "%s not found\n", c_file);
+            fprintf(stderr, "fmakefile: %s: No such file or directory\n", c_file);
+			free_mem(lists, is, exe_name);
 			exit(1);
 		}
         else {
@@ -103,9 +126,20 @@ int main(int argc, char **argv) {
 
 			exists = stat(o_file, &buf);
 			if (exists < 0 || buf.st_mtime < max_h || buf.st_mtime < c_time) {
-				sprintf(command, "gcc -c %s", c_file);
-				system(command);
-			}	
+				sprintf(command, "gcc -c ");
+				dll_traverse(ptr_2, lists[2]) {
+					strcat(command, ptr_2->val.s);
+					strcat(command, " ");
+				}
+				strcat(command, c_file);
+				printf("%s\n", command);
+				status = system(command);
+				if (status == -1 || WEXITSTATUS(status) != 0) {
+					fprintf(stderr, "Command failed.  Exiting\n");
+					free_mem(lists, is, exe_name);
+					exit(1);
+				}
+			}
 			stat(o_file, &buf);
 			if (buf.st_mtime > o_max) {
 				o_max = buf.st_mtime;
@@ -116,33 +150,33 @@ int main(int argc, char **argv) {
 	exists = stat(exe_name, &buf);
     if (exists < 0 || buf.st_mtime < o_max) {
 		command[0] = '\0';
-		sprintf(command, "gcc -o %s ", exe_name);
+		sprintf(command, "gcc -o %s", exe_name);
 		dll_traverse(ptr, lists[2]) {   // flags
-			strcat(command, ptr->val.s);
 			strcat(command, " ");
+			strcat(command, ptr->val.s);
 		}
 		dll_traverse(ptr, lists[4]) { // .o file
+			strcat(command, " ");
             strcat(command, ptr->val.s);
-            strcat(command, " ");
         }
 		dll_traverse(ptr, lists[3]) {   // libraries
-			strcat(command, ptr->val.s);
 			strcat(command, " ");
+			strcat(command, ptr->val.s);
 		}
-		system(command);
+
+		printf("%s\n", command);
+		status = system(command);
+		if (status == -1 || WEXITSTATUS(status) != 0) {
+            fprintf(stderr, "Command failed.  Fakemake exiting\n");
+            free_mem(lists, is, exe_name);
+			exit(1);
+		}
     }
-
-	// checking dllist values
-	/*Dllist ptr;
-	for (int i = 0; i < 4; i++) {
-		printf("%d: ", i);
-		dll_traverse(ptr, lists[i]) printf("%s ", ptr->val.s);
-		printf("\n");
+	else {
+		printf("%s up to date\n", exe_name);
 	}
-	printf("%s\n", name);
-	*/
 
-	for (int i = 0; i < 5; i++) {free_dllist(lists[i]);}
-	jettison_inputstruct(is);
+	free_mem(lists, is, exe_name);
+
 	return 0;
 }

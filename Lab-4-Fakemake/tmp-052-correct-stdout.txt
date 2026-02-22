@@ -1,0 +1,11 @@
+gcc -c -O2 testmain.c
+gcc -c -O2 tf0.c
+gcc -c -O2 tf1.c
+gcc -c -O2 tf2.c
+gcc -c -O2 tf4.c
+gcc -o testexec -O2 testmain.o tf3.o tf0.o tf1.o tf2.o tf4.o
+intoxicate me now
+With a taste of your lips.
+Baby, give me it.
+You're dangerous.
+I'm calling a guy like you

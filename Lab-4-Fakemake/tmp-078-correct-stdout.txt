@@ -1,0 +1,2 @@
+gcc -c -I/dev/null -O testmain.c
+gcc -c -I/dev/null -O tf4.c

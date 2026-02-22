@@ -1,0 +1,11 @@
+gcc -c tf2.c
+gcc -c tf3.c
+gcc -c tf1.c
+gcc -c testmain.c
+gcc -c tf0.c
+gcc -o testexec tf2.o tf3.o tf4.o tf1.o testmain.o tf0.o
+You're dangerous.
+I'm on a ride.
+Baby, give me it.
+With a taste of your lips.
+I'm ready now
