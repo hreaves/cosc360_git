@@ -1,0 +1,6 @@
+gcc -o testexec -I/dev/null -O tf2.o tf3.o testmain.o tf0.o tf1.o tf4.o
+With a taste of your lips.
+I'm loving' it.
+Baby, Can't you see?
+I can't wait, I need a hit.
+I'm on a ride.

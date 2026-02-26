@@ -1,0 +1,7 @@
+gcc -c -I/dev/null -O tf4.c
+gcc -o testexec -I/dev/null -O tf4.o tf3.o testmain.o testlib.a
+You're dangerous.
+I'm on a ride.
+Should wear a warning.
+I'm loving' it.
+I can't wait, I need a hit.

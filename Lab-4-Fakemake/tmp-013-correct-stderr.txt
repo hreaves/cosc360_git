@@ -1,0 +1,14 @@
+twofile.c: In function ‘main’:
+twofile.c:6:3: warning: implicit declaration of function ‘first_three’ [-Wimplicit-function-declaration]
+    6 |   first_three();
+      |   ^~~~~~~~~~~
+twofile.c: In function ‘main’:
+twofile.c:6:3: warning: implicit declaration of function ‘first_three’ [-Wimplicit-function-declaration]
+    6 |   first_three();
+      |   ^~~~~~~~~~~
+first_three.c: In function ‘badproc’:
+first_three.c:11:48: error: expected ‘;’ before ‘}’ token
+   11 | void badproc() { printf("I forget semi-colons") }
+      |                                                ^~
+      |                                                ;
+Command failed.  Exiting

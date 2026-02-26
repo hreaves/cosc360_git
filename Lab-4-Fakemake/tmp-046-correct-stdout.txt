@@ -1,0 +1,11 @@
+gcc -c -O testmain.c
+gcc -c -O tf1.c
+gcc -c -O tf2.c
+gcc -c -O tf3.c
+gcc -c -O tf4.c
+gcc -o testexec -O testmain.o tf1.o tf2.o tf3.o tf4.o testlib.a
+Baby, give me it.
+intoxicate me now
+I'm on a ride.
+I'm loving' it.
+I'm calling a guy like you

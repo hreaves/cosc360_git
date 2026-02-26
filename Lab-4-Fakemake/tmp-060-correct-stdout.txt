@@ -1,0 +1,3 @@
+gcc -c -I/dev/null -O tf1.c
+gcc -c -I/dev/null -O testmain.c
+gcc -c -I/dev/null -O tf2.c

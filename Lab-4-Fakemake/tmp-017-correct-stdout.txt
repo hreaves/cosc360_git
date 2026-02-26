@@ -1,0 +1,8 @@
+gcc -c first_three.c
+gcc -o twoexec twofile.o first_three.o
+Too high, can't come down
+Losing my head
+Spinning 'round and 'round
+Do you feel me now?
+I'm addicted to you
+Don't you know that you're toxic?

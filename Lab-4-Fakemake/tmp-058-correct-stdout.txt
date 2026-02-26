@@ -1,0 +1,3 @@
+gcc -c testmain.c
+gcc -c tf3.c
+gcc -o testexec testmain.o tf3.o tf4.o -lm testlib.a

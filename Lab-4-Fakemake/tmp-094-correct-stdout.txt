@@ -1,0 +1,8 @@
+gcc -c -I/dev/null -O tf3.c
+gcc -o testexec -I/dev/null -O testmain.o tf0.o tf1.o tf2.o tf3.o tf4.o -lm
+I'm loving' it.
+I'm ready now
+Baby, give me it.
+I'm on a ride.
+With a taste of your lips.
+The log base 10 of 12345.6789 is 4.0915

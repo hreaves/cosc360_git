@@ -1,0 +1,10 @@
+gcc -c testmain.c
+gcc -c tf0.c
+gcc -c tf1.c
+gcc -c tf2.c
+gcc -o testexec testmain.o tf0.o tf1.o tf4.o tf2.o tf3.o
+intoxicate me now
+I'm on a ride.
+With a taste of your lips.
+I can't wait, I need a hit.
+I'm loving' it.

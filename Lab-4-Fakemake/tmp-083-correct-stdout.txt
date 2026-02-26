@@ -1,0 +1,10 @@
+gcc -c -I/dev/null -O tf2.c
+gcc -c -I/dev/null -O tf3.c
+gcc -c -I/dev/null -O testmain.c
+gcc -c -I/dev/null -O tf1.c
+gcc -o testexec -I/dev/null -O tf2.o tf3.o testmain.o tf0.o tf1.o tf4.o
+You're dangerous.
+With a taste of your lips.
+Baby, give me it.
+Baby, Can't you see?
+I can't wait, I need a hit.

@@ -1,0 +1,8 @@
+gcc -c -O -I/dev/null tf3.c
+gcc -c -O -I/dev/null tf4.c
+gcc -o testexec -O -I/dev/null tf3.o tf2.o tf4.o testmain.o testlib.a
+Baby, give me it.
+You're dangerous.
+I can't wait, I need a hit.
+I'm loving' it.
+With a taste of your lips.

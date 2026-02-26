@@ -1,0 +1,33 @@
+testmain.c: In function ‘main’:
+testmain.c:6:3: warning: implicit declaration of function ‘first’ [-Wimplicit-function-declaration]
+    6 |   first();
+      |   ^~~~~
+testmain.c:7:3: warning: implicit declaration of function ‘second’ [-Wimplicit-function-declaration]
+    7 |   second();
+      |   ^~~~~~
+testmain.c:8:3: warning: implicit declaration of function ‘third’ [-Wimplicit-function-declaration]
+    8 |   third();
+      |   ^~~~~
+testmain.c:9:3: warning: implicit declaration of function ‘fourth’ [-Wimplicit-function-declaration]
+    9 |   fourth();
+      |   ^~~~~~
+testmain.c:10:3: warning: implicit declaration of function ‘fifth’ [-Wimplicit-function-declaration]
+   10 |   fifth();
+      |   ^~~~~
+testmain.c: In function ‘main’:
+testmain.c:6:3: warning: implicit declaration of function ‘first’ [-Wimplicit-function-declaration]
+    6 |   first();
+      |   ^~~~~
+testmain.c:7:3: warning: implicit declaration of function ‘second’ [-Wimplicit-function-declaration]
+    7 |   second();
+      |   ^~~~~~
+testmain.c:8:3: warning: implicit declaration of function ‘third’ [-Wimplicit-function-declaration]
+    8 |   third();
+      |   ^~~~~
+testmain.c:9:3: warning: implicit declaration of function ‘fourth’ [-Wimplicit-function-declaration]
+    9 |   fourth();
+      |   ^~~~~~
+testmain.c:10:3: warning: implicit declaration of function ‘fifth’ [-Wimplicit-function-declaration]
+   10 |   fifth();
+      |   ^~~~~
+fmakefile (6) cannot have more than one E line
