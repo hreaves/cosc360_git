@@ -1,17 +1,13 @@
 /*  COSC360 Lab5 Tarc
 	Harrison Reaves
-
+	
 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
-#include <time.h>
-#include <sys/wait.h>
 #include <dirent.h>
-#include <libgen.h>
-#include "fields.h"
+#include <libgen.h> // basename
 #include "dllist.h"
 #include "jval.h"
 #include "jrb.h"
@@ -29,13 +25,29 @@ int compare(Jval v1, Jval v2) {
 }
 // prints directories and files with inode existance check
 void print(JRB inodes, struct stat buf, char *full_path, char *stripped_path) {
-	// print strip_path, filename size, inode
+	// print filename size, stripped path, inode
+	int fn_size = strlen(stripped_path);
+	fwrite(&fn_size, 1, 4, stdout);
+	fwrite(stripped_path, 1, fn_size, stdout);
+	fwrite(&buf.st_ino, 1, 8, stdout);
 	if (jrb_find_gen(inodes, new_jval_l(buf.st_ino), compare) == NULL) { // check if inode seen yet
         jrb_insert_gen(inodes, new_jval_l(buf.st_ino), new_jval_i(0), compare); // add inode to tree if not
 		// print mode, modification time
+		fwrite(&buf.st_mode, 1, 4, stdout);
+		fwrite(&buf.st_mtime, 1, 8, stdout);
 		if (S_ISREG(buf.st_mode)) {
-			// open full_path and read bytes
-			// print file size, the bytes
+			// print file size
+			fwrite(&buf.st_size, 1, 8, stdout);
+			FILE *file;
+			char block[4096];
+			size_t n;
+			file = fopen(full_path, "rb");
+			if (file == NULL) {perror(full_path); exit(1);}
+			// read and print the bytes
+			while((n = fread(block, 1, sizeof(block), file)) > 0) {
+				fwrite(block, 1, n, stdout);
+			}
+			fclose(file);
 		}
     }
     return;
@@ -50,7 +62,6 @@ void traverse(char *fn, char *s_fn, JRB inodes) {
 
 	int fn_size, dir_fn_size, sz, s_fn_size, s_dir_fn_size;
 	char *dir_fn, *s_dir_fn; // filename with directory
-	
 
 	Dllist directories, tmp; // Dllist of directory names, for doing recusion after closing
 
