@@ -1,6 +1,6 @@
 CC = gcc 
 INCLUDES = -I/home/mrjantz/cs360/include
-CFLAGS = $(INCLUDES)
+CFLAGS = $(INCLUDES) -g -O0 -Wall -Wextra
 LIBDIR = /home/mrjantz/cs360/lib
 LIBS = $(LIBDIR)/libfdr.a 
 
