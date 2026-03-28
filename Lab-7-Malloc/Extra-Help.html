@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Custom Malloc Pseudocode Explanation</title>
+
+    <style>
+        .heap-diagram {
+            font-family: monospace;
+            text-align: left;
+            border-collapse: collapse;
+            margin: 10px;
+        }
+        .heap-diagram td, .heap-diagram th {
+            border: 1px solid black;
+            padding: 5px;
+        }
+        .heap-diagram th {
+            text-align: left;
+        }
+        .addresses {
+            text-align: right;
+        }
+        .blue-text {
+            color: blue;
+        }
+        .red-text {
+            color: red;
+        }
+        .indented {
+            margin-left: 20px; 
+        }
+    </style>
+
+</head>
+<body>
+
+<h2>Pseudocode jmalloc</h2>
+<h3>Written by Maria Hernandez Rivero, March, 2024</h3>
+
+
+<p><strong> NOTE: </strong> Whenever you need to add a specific number of bytes to a memory address pointing to a <code>Chunk</code> struct, you should cast this memory address to either <code>void*</code> or <code>char*</code>. This ensures that, during pointer arithmetic, the operation adds <code>bytes</code> rather than <code>bytes * sizeof(Chunk)</code>. While you cannot dereference a <code>void*</code> pointer, performing pointer arithmetic on it treats each increment as a one-byte move. 
+
+<p> <strong> Compiling mymalloc.c</strong></p>
+<p> The gradescript for jmalloc compiles mymalloc.c along with a test file named test.c (which is copied from the Gradescript-Examples directory depending on the problem number provided to the script). This compilation step produces an executable named a.out by default, as no output file name is specified in the gcc command.
+    If the compilation is successful, the script runs a.out and captures its standard output and standard error into temporary files for analysis.
+    The test file (corresponding to a specific problem number from the Gradescript-Examples directory) is designed to test the functionality implemented in mymalloc.c for the given problem number.
+    In other words, <strong> you don't need to use a makefile to compile your program. Just ./gradeall or ./gradescript number, but make sure that your mymalloc.c file is in the same directory as the gradescript file.</strong> </p>
+
+    <p><strong>Variable and Struct</strong></p>
+<ul>
+<li> A free list data structure that contains all chunks of memory available to use in future my_malloc() allocations. In other words, the free list contains chunks of the heap memory allocated by <code>sbrk</code>, but that are available (free) to give to the user once they call <code>my_malloc()</code>.
+    <p>Each Chunk of memory in the free list data structure contains the size of the chunk, a pointer to the next Chunk, and a pointer to the previous Chunk.</p>
+
+</li>
+<li> A global variable that points to the beginning of the free list. </li>
+</ul>
+
+<h3>Functions:</h3>
+
+<h4>1. Traverse function:</h4>
+<ul>
+    <li><strong>Parameters:</strong>
+        <ul>
+            <li> size (number of bytes requested by the user + alignment bytes + 8 bytes for bookkeeping)</li>
+        </ul>
+    </li>
+    <li><strong>Body:</strong> Iterates through the free list to find a chunk of memory that is large enough to fulfill the request. The size of the chunk must be at least equal to the 'size' parameter passed to the function.</li>
+    <li><strong>Return:</strong> The address of the suitable chunk of memory. If the function returns <code>NULL</code>, it indicates that there is either no free list of chunks or there is no chunk available that is large enough to satisfy the requested size.</li>
+</ul>
+
+<h4>2. Function to insert a node in the free list:</h4>
+<ul>
+    <li><strong>NOTE:</strong> When we free a node (add a node to the free list), the primary action involves readjusting the <code>next</code> and <code>prev</code> pointers of certain chunks to ensure the free list remains properly linked. The size of each chunk initially remains the same. However, subsequent operations, such as coalescing contiguous free chunks, may adjust the sizes of nodes in the list to optimize memory usage and minimize fragmentation.</li>
+    <li><strong>Parameters:</strong> Pointer to a chunk that we want to insert to the free list.</li>
+    <li><strong>Body:</strong>
+        <ul>
+            <li>If the free list does not exist (<code>head == NULL</code>), create it. Like in this example provided by Dr. Plank: </li>
+            <p><code>malloc_head == <code class="blue-text"> 0x6100 (chunk that we passed to the function) </code> </code></p>
+            <table class="heap-diagram">
+                <tr>
+                    <th colspan="2">0x6100 (start of heap)</th>
+                </tr>
+                <tr>
+                    <td class="blue-text">8192</td>
+                    <td class="addresses">0x6100</td>
+                </tr>
+                <tr>
+                    <td class="blue-text">NULL</td>
+                    <td class="addresses">0x6104</td>
+                </tr>
+                <tr>
+                    <td class="blue-text">NULL</td>
+                    <td class="addresses">0x6108</td>
+                </tr>
+                <tr>
+                    <td>...</td>
+                    <td class="addresses">...</td>
+                </tr>
+                <tr>
+                    <th colspan="2">0x8100 (end of heap -- sbrk(0))</th>
+                </tr>
+            </table>
+            <p> Namely, point <code> head </code> to the chunk of memory we passed to the function. </p>
+            <li>If the memory address of the node I want to insert is less than the memory address of the <code> head </code>:
+                <ul>
+                    <li>Point the <code> next </code> field of the chunk you want to insert to the <code> current head </code>. </li>
+                    <li>Point the <code> previous </code> field of the <code> current head </code> to the chunk you want to insert.</li>
+                    <li>Update the <code> new head </code> to be equal to the the chunk you want to insert. </li>
+                </ul>
+            </li>
+
+    <p><code>malloc_head == </code> <code class="red-text"> 0x6100 (new head - chunk that we passed to the function) </code> </p>
+    <table class="heap-diagram">
+        <tr>
+            <th colspan="2">0x6100 (start of heap)</th>
+        </tr>
+        <tr>
+            <td>24</td>
+            <td class="addresses">0x6100</td>
+        </tr>
+        <tr>
+            <td class="blue-text">0x6128</td>
+            <td class="addresses">0x6104</td>
+        </tr>
+        <tr>
+            <td class="blue-text">NULL</td>
+            <td class="addresses">0x6108</td>
+        </tr>
+        <tr>
+            <td>0x6824abcd</td>
+            <td class="addresses">0x610c</td>
+        </tr>
+        <tr>
+            <td> </td>
+            <td class="addresses">0x6110</td>
+        </tr>
+        <tr>
+            <td> 5555 </td>
+            <td class="addresses">0x6114</td>
+        </tr>
+        <tr>
+            <td> 16</td>
+            <td class="addresses">0x6118</td>
+        </tr>
+        <tr>
+            <td> NULL </td>
+            <td class="addresses">0x611c</td>
+        </tr>
+        <tr>
+            <td>0x00230000 </td>
+            <td class="addresses">0x6120</td>
+        </tr>
+        <tr>
+            <td>0xfe??????</td>
+            <td class="addresses">0x6124</td>
+        </tr>
+        <tr>
+            <td> 8152 </td>
+            <td class="addresses red-text"> 0x6128 (previous head) </td>
+        </tr>
+        <tr>
+            <td> NULL </td>
+            <td class="addresses">0x612c</td>
+        </tr>
+        <tr>
+            <td class="blue-text">0x6100 </td>
+            <td class="addresses">0x6130</td>
+        </tr>
+        <tr>
+            <td>...</td>
+            <td class="addresses">...</td>
+        </tr>
+        <tr>
+            <th colspan="2">0x8100 (end of heap -- sbrk(0))</th>
+        </tr>
+    </table>
+
+
+<p> I took this table from Dr. Plank's examples in the malloc 2 lecture. Only pay attention to the sections colored with red and blue and if you want to understand the whole memory layout read his Malloc Lecture #2. </p>
+
+<li>Otherwise, loop through the list and insert the chunk in the right position in the list – list is sorted in ascending order based on memory address. 
+    In other words, the chunk should be inserted after an existing node if its memory address is greater than that node but less than the node's next chunk. You may use two variables to achieve this, one variable that holds the memory address of a given chunk in the list, 
+    and another one that holds the memory address of the next chunk. </li>
+            <li> Change the previous and next link accordingly. If the node you want to insert is in the middle of the list, you need to adjust four links. If the node you want to insert is at the end of the list, you just need to adjust two links. </li>
+        </ul>
+        <p> <strong> NOTE: </strong> Sorting the list in ascending order makes coalescing easier. </p>
+    </li>
+    <li><strong>Return:</strong> Does not return anything. </li>
+</ul>
+
+<h4>3. my_malloc():</h4>
+<ul>
+    <li><strong>Parameters:</strong> Bytes the user wants to allocate (do not include alignment bytes).</li>
+    <li><strong>Body:</strong>
+        <ul>
+            <li>Perform alignment: <code>size = (size + 7 + 8) & -8;</code></li>
+
+            <div class="indented"> 
+                <p><strong> Alignment Example: </strong> </p>
+
+                <p>Suppose <code>size</code> = 13. You want to allocate at least 13 bytes plus space for bookkeeping, and align everything to a multiple of 8.</p>
+                <ul>
+                    <li>Add 7 to the requested size to round up to the nearest multiple of 8. This ensures that if the size is already a multiple of 8, we don't add an unnecessary full block of 8 bytes.</li>
+                    <li>Add an additional 8 bytes for bookkeeping purposes which includes metadata such as the size of the allocation.</li>
+                    <li>Finally, use the bitwise AND operation with <code>-8</code> to round down to an exact multiple of 8. This step clears the last three bits of the size, ensuring it is a multiple of 8.</li>
+                </ul>
+                
+                <p>
+                <code>size = 13</code><br>
+                <code>size + 7 = 20 (0x14)</code><br>
+                <code>size + 7 + 8 = 28 (0x1C)</code><br>
+                </p>
+    
+                <p>
+                <code>0x1C</code> (binary: 00011100)<br>
+                -8 decimal => <code>0xFFFFFFF8</code> => binary: 1111_1111_1111_1111_1111_1111_1111_1000<br>
+                </p>
+    
+                <p>
+                <code>0x1C AND 0xFFFFFFF8</code> yields:<br>
+                <code>0x18</code> (binary: 00011000), which is 24 in decimal.
+                </p>
+            </div>
+
+            <li> Traverse the list and find a chunk big enough to fit size. </li>
+            <li> If the free list is empty, call <code>sbrk</code> with either 8192 or the size previously calculated after the alignment - whichever is greater. Typecast the memory returned by sbrk to a pointer to your <code> chunk struct  </code> and set the fields accordingly. Then, insert this whole chunk of memory into the free list.</li>
+            <li> Break off a chunk of the free list to be allocated. </li>
+            <ul>
+                <li> Decrease the size of the free chunk by the size calculated previously (bytes requested by the user + alignment bytes) </li>
+                <li> If the new size of that specific free chunk is too small to be useful for subsequent allocations (16 or less), return to the user all the original bytes of that chunk (size of that chunk before decreasing its size). This is because if the new size is too small, the chunk will be useless for subsequent allocations since it can never be re-allocated until it is coalesced – as Dr. Marz explained.  </li>
+                <li> Otherwise, give to the user the last part of this chunk (start_chunk_address + new_chunk_size). We need to set the size of the last part of this chunk before returning the bytes to the user. </li>
+            </ul>
+        </ul>
+    </li>
+
+    <li><strong>Return:</strong> A <code>void*</code> pointer to the start of the memory block allocated for the user. This address is calculated as (start_chunk_address + new_chunk_size + 8 bytes of bookkeeping). It's important to note that the usable memory for the user begins 8 bytes after the start of the allocated chunk. 
+    This offset accounts for the bookkeeping information stored at the beginning of each allocated block. Therefore, the actual usable memory address provided to the user will be (start_chunk_address + new_chunk_size + 8 bytes).</li>
+
+</ul>
+
+<h4>4. Function to delete node:</h4>
+<ul>
+    <li><strong>Parameters:</strong> Memory address of the chunk to delete.</li>
+    <li><strong>Body:</strong> Readjust next and previous links.</li>
+    <p>Consider Plank's implementation of the delete operation in a doubly linked list:</p>
+
+    <pre><code>
+    void dll_delete_node(Dllist node)    /* Deletes an arbitrary item */
+    {
+    node->flink->blink = node->blink;
+    node->blink->flink = node->flink;
+    free(node);
+    }
+    </code></pre>
+
+    <p><strong>NOTE:</strong> In our custom memory allocator, DO NOT <code>free()</code> the node after readjusting the links. This is because we are only removing the node from our free list, and we want to keep the memory address valid for future allocation by <code>my_malloc()</code>. The memory will be returned to the user, not returned to the system.</p>
+    <li><strong>Return:</strong> Does not return anything.</li>
+
+</ul>
+
+<h4>5. my_free():</h4>
+<ul>
+    <li><strong>Parameters:</strong> Memory address of the first byte of the chunk that I want to free.</li>
+    <li><strong>Body:</strong> Decrease this memory address by 8 bytes (to account for the bookkeeping bytes) and pass this new memory address to the function that incorporates a chunk to the free list.</li>
+    <li><strong>Return:</strong> Does not return anything.</li>
+</ul>
+
+<h4>6. Coalesce_free_list():</h4>
+<ul>
+    <li><strong>Parameters:</strong> No parameters.</li>
+    <li><strong>Body:</strong> Loop through the whole list. If <code>address_current_chunk + size_current_chunk == address_next_chunk</code>, add the size of the next chunk to the size of the current chunk and delete the next node. Otherwise, go to the next chunk in the list.</li>
+    <li><strong>Return:</strong> Does not return anything.</li>
+</ul>
+
+</body>
+</html>
