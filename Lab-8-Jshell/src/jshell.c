@@ -1,6 +1,7 @@
 // COSC360 Lab8 Jshell
 // Harrison Reaves
 // This program is a small and primitive shell that executes commands and redirects their input/output
+// AI was used in debugging and finding memory leaks.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
